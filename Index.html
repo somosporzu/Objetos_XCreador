@@ -1,0 +1,582 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Save, Download, Book, AlertCircle } from 'lucide-react';
+
+const RARITIES = {
+  'Poco Común': { min: 3, max: 5, price: '200-500 L' },
+  'Raro': { min: 6, max: 10, price: '500-2,000 L' },
+  'Muy Raro': { min: 11, max: 15, price: '2,000-10,000 L' },
+  'Legendario': { min: 16, max: 25, price: 'Sin precio' },
+  'Artefacto': { min: 26, max: 999, price: 'No se puede comprar' }
+};
+
+const PROPERTIES = {
+  'Bonificadores a Atributos': [
+    { name: '+1 a un Atributo', cost: 3, note: 'Máximo +3 en un objeto' },
+    { name: '+1 a dos Atributos', cost: 5, note: 'Muy raro' },
+    { name: '+1 a los tres Atributos', cost: 8, note: 'Solo Legendario+' }
+  ],
+  'Bonificadores a Combate': [
+    { name: '+1 a tiradas de ataque', cost: 2, note: 'Solo armas' },
+    { name: '+1 al daño', cost: 2, note: 'Solo armas' },
+    { name: '+1 a Defensa', cost: 2, note: 'Armaduras, escudos, accesorios' },
+    { name: '+1 a Iniciativa', cost: 2, note: 'Accesorios, armas ligeras' }
+  ],
+  'Propiedades de Arma Especiales': [
+    { name: 'Alcance Extendido', cost: 2, note: '+3m alcance cuerpo a cuerpo' },
+    { name: 'Retorno Automático', cost: 2, note: 'Arma arrojadiza vuelve' },
+    { name: 'Vampírica', cost: 4, note: 'Recuperas Resistencia = mitad daño' }
+  ],
+  'Propiedades de Movimiento': [
+    { name: 'Pies Ligeros', cost: 2, note: 'Ignora terreno difícil' },
+    { name: 'Vuelo Limitado', cost: 5, note: '18m, 1/día, 3 rondas' },
+    { name: 'Visión en Oscuridad', cost: 2, note: 'Ver en oscuridad total 15m' }
+  ]
+};
+
+const REQUIREMENTS = [
+  { name: 'Sintonía', cost: -1, desc: 'Descanso largo para activar' },
+  { name: 'Herencia Específica', cost: -2, desc: 'Solo una Herencia definida' },
+  { name: 'Concepto Específico', cost: -2, desc: 'Requiere Concepto' }
+];
+
+const CURSES = [
+  { name: 'Menor', cost: 2, desc: 'Desventaja situacional, -1 Atributo' },
+  { name: 'Mayor', cost: 4, desc: 'Penalización -2 Atributo, vulnerabilidad' },
+  { name: 'Severa', cost: 6, desc: 'Transformación, precio de sangre' }
+];
+
+const CONSUMABLES = {
+  'Pociones': {
+    formula: (level) => Math.ceil(level * 1.5),
+    priceMultiplier: 50,
+    action: 'Acción Rápida (beber)',
+    items: [
+      { name: 'Curación Menor', effect: '1d6+2 Resistencia', level: 0 },
+      { name: 'Curación', effect: '2d6+2 Resistencia', level: 1 },
+      { name: 'Curación Mayor', effect: '3d6+4 Resistencia', level: 2 },
+      { name: 'Fuerza', effect: '+2 Cuerpo 1h', level: 1 },
+      { name: 'Invisibilidad', effect: 'Invisible 10 min', level: 2 },
+      { name: 'Elixir de Vida', effect: 'Restaura toda Resistencia', level: 3 }
+    ]
+  },
+  'Pergaminos': {
+    formula: (level) => level * 2,
+    priceMultiplier: 75,
+    action: 'Acción Principal + Salvación',
+    items: [
+      { name: 'Misil Mágico', effect: '3×1d6+2, 20m', level: 1 },
+      { name: 'Escudo Arcano', effect: '+5 Defensa 3 rondas', level: 1 },
+      { name: 'Bola de Fuego', effect: '3d6 Fuego, área 5m', level: 2 },
+      { name: 'Teletransporte', effect: 'Grupo 100m', level: 2 }
+    ]
+  },
+  'Talismanes': {
+    formula: (level) => Math.ceil(level * 1.5),
+    priceMultiplier: 60,
+    action: 'Activación automática',
+    items: [
+      { name: 'Protección', effect: 'Ignora próximo ataque', level: 1 },
+      { name: 'Fuga', effect: 'Teletransporte 15m', level: 1 },
+      { name: 'Resurrección Menor', effect: 'Revivir con 1 Resistencia', level: 2 }
+    ]
+  },
+  'Aceites': {
+    formula: (combats) => combats,
+    priceMultiplier: 40,
+    action: '1 minuto aplicar',
+    items: [
+      { name: 'Afilar', effect: '+1 daño', level: 1 },
+      { name: 'Fuego', effect: 'Daño Fuego', level: 1 },
+      { name: 'Veneno', effect: 'Envenena 1d6/ronda', level: 2 }
+    ]
+  }
+};
+
+const ItemCreator = () => {
+  const [activeTab, setActiveTab] = useState('objects');
+  const [item, setItem] = useState({
+    name: '',
+    rarity: 'Raro',
+    baseType: '',
+    properties: [],
+    requirements: [],
+    curses: [],
+    description: '',
+    history: ''
+  });
+
+  const [consumable, setConsumable] = useState({
+    type: 'Pociones',
+    selectedItem: null,
+    customName: '',
+    customEffect: '',
+    customLevel: 1,
+    quantity: 1
+  });
+
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [totalPPP, setTotalPPP] = useState(0);
+
+  useEffect(() => {
+    const propertiesCost = item.properties.reduce((sum, p) => sum + p.cost, 0);
+    const requirementsCost = item.requirements.reduce((sum, r) => sum + r.cost, 0);
+    const cursesCost = item.curses.reduce((sum, c) => sum + c.cost, 0);
+    setTotalPPP(propertiesCost + requirementsCost + cursesCost);
+  }, [item.properties, item.requirements, item.curses]);
+
+  const addProperty = (property) => {
+    setItem(prev => ({
+      ...prev,
+      properties: [...prev.properties, { ...property, id: Date.now() }]
+    }));
+  };
+
+  const removeProperty = (id) => {
+    setItem(prev => ({
+      ...prev,
+      properties: prev.properties.filter(p => p.id !== id)
+    }));
+  };
+
+  const addRequirement = (req) => {
+    if (item.requirements.length >= 3) {
+      alert('Máximo 3 requisitos permitidos');
+      return;
+    }
+    setItem(prev => ({
+      ...prev,
+      requirements: [...prev.requirements, { ...req, id: Date.now() }]
+    }));
+  };
+
+  const removeRequirement = (id) => {
+    setItem(prev => ({
+      ...prev,
+      requirements: prev.requirements.filter(r => r.id !== id)
+    }));
+  };
+
+  const addCurse = (curse) => {
+    if (item.curses.length >= 2) {
+      alert('Máximo 2 maldiciones permitidas');
+      return;
+    }
+    setItem(prev => ({
+      ...prev,
+      curses: [...prev.curses, { ...curse, id: Date.now(), details: '' }]
+    }));
+  };
+
+  const removeCurse = (id) => {
+    setItem(prev => ({
+      ...prev,
+      curses: prev.curses.filter(c => c.id !== id)
+    }));
+  };
+
+  const updateCurseDetails = (id, details) => {
+    setItem(prev => ({
+      ...prev,
+      curses: prev.curses.map(c => c.id === id ? { ...c, details } : c)
+    }));
+  };
+
+  const isWithinBudget = () => {
+    const range = RARITIES[item.rarity];
+    return totalPPP >= range.min && totalPPP <= range.max;
+  };
+
+  const exportItem = () => {
+    const text = `
+=== ${item.name || 'Objeto Sin Nombre'} ===
+Rareza: ${item.rarity} (${totalPPP} PPP)
+Tipo Base: ${item.baseType || 'No especificado'}
+
+PROPIEDADES:
+${item.properties.map(p => `• ${p.name} (${p.cost} PPP)`).join('\n')}
+
+${item.requirements.length > 0 ? `REQUISITOS:\n${item.requirements.map(r => `• ${r.name} (${r.cost} PPP)`).join('\n')}` : ''}
+
+Coste Total: ${totalPPP} PPP
+    `.trim();
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${item.name || 'objeto'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const calculateConsumable = () => {
+    const data = CONSUMABLES[consumable.type];
+    const level = consumable.selectedItem?.level || consumable.customLevel;
+    const ppp = data.formula(level);
+    const price = ppp * data.priceMultiplier;
+    const totalPrice = price * consumable.quantity;
+    return { ppp, price, totalPrice };
+  };
+
+  const exportConsumable = () => {
+    const data = CONSUMABLES[consumable.type];
+    const calc = calculateConsumable();
+    const item = consumable.selectedItem;
+    const name = item ? item.name : consumable.customName;
+    const effect = item ? item.effect : consumable.customEffect;
+    const level = item ? item.level : consumable.customLevel;
+
+    const text = `
+=== ${consumable.type}: ${name} ===
+Efecto: ${effect}
+Nivel: ${level}
+PPP: ${calc.ppp}
+Precio Unitario: ${calc.price} L
+Cantidad: ${consumable.quantity}
+Precio Total: ${calc.totalPrice} L
+Uso: ${data.action}
+    `.trim();
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${consumable.type}-${name}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white p-6 rounded-lg shadow-xl mb-6">
+          <div className="flex items-center gap-3">
+            <Book className="w-8 h-8" />
+            <div>
+              <h1 className="text-3xl font-bold">Creador de Objetos PAPA</h1>
+              <p className="text-amber-100">Sistema Completo de Creación</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setActiveTab('objects')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                activeTab === 'objects'
+                  ? 'bg-white text-amber-800'
+                  : 'bg-amber-700 text-white hover:bg-amber-600'
+              }`}
+            >
+              Objetos Mágicos
+            </button>
+            <button
+              onClick={() => setActiveTab('consumables')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                activeTab === 'consumables'
+                  ? 'bg-white text-amber-800'
+                  : 'bg-amber-700 text-white hover:bg-amber-600'
+              }`}
+            >
+              Consumibles
+            </button>
+          </div>
+        </header>
+
+        {activeTab === 'consumables' ? (
+          <ConsumablesCalculator 
+            consumable={consumable}
+            setConsumable={setConsumable}
+            calculateConsumable={calculateConsumable}
+            exportConsumable={exportConsumable}
+          />
+        ) : (
+          <ObjectCreator 
+            item={item}
+            setItem={setItem}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            totalPPP={totalPPP}
+            addProperty={addProperty}
+            removeProperty={removeProperty}
+            addRequirement={addRequirement}
+            removeRequirement={removeRequirement}
+            addCurse={addCurse}
+            removeCurse={removeCurse}
+            updateCurseDetails={updateCurseDetails}
+            isWithinBudget={isWithinBudget}
+            exportItem={exportItem}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ConsumablesCalculator = ({ consumable, setConsumable, calculateConsumable, exportConsumable }) => {
+  const calc = calculateConsumable();
+  const data = CONSUMABLES[consumable.type];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-4">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Tipo de Consumible</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.keys(CONSUMABLES).map(type => (
+              <button
+                key={type}
+                onClick={() => setConsumable(prev => ({ ...prev, type, selectedItem: null }))}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  consumable.type === type
+                    ? 'border-amber-600 bg-amber-50'
+                    : 'border-gray-200 hover:border-amber-300'
+                }`}
+              >
+                <div className="text-lg font-bold text-amber-900">{type}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Items Predefinidos</h2>
+          <div className="space-y-2 mb-6">
+            {data.items.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => setConsumable(prev => ({ ...prev, selectedItem: item }))}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                  consumable.selectedItem?.name === item.name
+                    ? 'border-amber-600 bg-amber-50'
+                    : 'border-gray-200 hover:border-amber-300'
+                }`}
+              >
+                <div className="font-bold text-gray-900">{item.name}</div>
+                <div className="text-sm text-gray-600 mt-1">{item.effect}</div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Nivel {item.level} • {data.formula(item.level)} PPP • {data.formula(item.level) * data.priceMultiplier} L
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t pt-4">
+            <h3 className="font-semibold text-gray-700 mb-3">Crear Personalizado:</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={consumable.customName}
+                onChange={(e) => setConsumable(prev => ({ ...prev, customName: e.target.value, selectedItem: null }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Nombre"
+              />
+              <input
+                type="text"
+                value={consumable.customEffect}
+                onChange={(e) => setConsumable(prev => ({ ...prev, customEffect: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Efecto"
+              />
+              <input
+                type="number"
+                min="0"
+                max="3"
+                value={consumable.customLevel}
+                onChange={(e) => setConsumable(prev => ({ ...prev, customLevel: parseInt(e.target.value) || 0 }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Nivel"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Cantidad</h2>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setConsumable(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              min="1"
+              value={consumable.quantity}
+              onChange={(e) => setConsumable(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+              className="w-24 text-center text-2xl font-bold px-3 py-2 border border-gray-300 rounded-md"
+            />
+            <button
+              onClick={() => setConsumable(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="lg:col-span-1">
+        <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+          
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-4 rounded-lg">
+              <div className="text-sm text-gray-600">Item</div>
+              <div className="font-bold text-amber-900">
+                {consumable.selectedItem?.name || consumable.customName || 'No seleccionado'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">PPP:</span>
+                <span className="font-bold">{calc.ppp}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Precio Unit:</span>
+                <span className="font-bold">{calc.price} L</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Cantidad:</span>
+                <span className="font-bold">×{consumable.quantity}</span>
+              </div>
+              <div className="flex justify-between pt-3 border-t-2">
+                <span className="text-lg font-semibold">TOTAL:</span>
+                <span className="text-2xl font-bold text-amber-900">{calc.totalPrice} L</span>
+              </div>
+            </div>
+
+            <button
+              onClick={exportConsumable}
+              disabled={!consumable.selectedItem && !consumable.customName}
+              className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Exportar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ObjectCreator = ({ 
+  item, setItem, selectedCategory, setSelectedCategory, totalPPP,
+  addProperty, removeProperty, addRequirement, removeRequirement, 
+  addCurse, removeCurse, updateCurseDetails, isWithinBudget, exportItem 
+}) => {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-4">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Información Básica</h2>
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={item.name}
+              onChange={(e) => setItem(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="Nombre del Objeto"
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <select
+                value={item.rarity}
+                onChange={(e) => setItem(prev => ({ ...prev, rarity: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                {Object.keys(RARITIES).map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={item.baseType}
+                onChange={(e) => setItem(prev => ({ ...prev, baseType: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Tipo Base"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Propiedades</h2>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
+          >
+            <option value="">Seleccionar categoría</option>
+            {Object.keys(PROPERTIES).map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          {selectedCategory && (
+            <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+              {PROPERTIES[selectedCategory].map((prop, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => addProperty(prop)}
+                  className="w-full text-left p-2 hover:bg-amber-50 rounded border"
+                >
+                  <div className="flex justify-between">
+                    <span>{prop.name}</span>
+                    <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {item.properties.map(prop => (
+              <div key={prop.id} className="flex justify-between items-center bg-amber-50 p-3 rounded">
+                <span>{prop.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
+                  <button onClick={() => removeProperty(prop.id)} className="text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="lg:col-span-1">
+        <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+          <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+          
+          <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-4 rounded-lg mb-4">
+            <div className="text-sm text-gray-600">Presupuesto {item.rarity}</div>
+            <div className="text-2xl font-bold text-amber-900">
+              {RARITIES[item.rarity].min} - {RARITIES[item.rarity].max} PPP
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-lg mb-4 ${isWithinBudget() ? 'bg-green-100' : 'bg-red-100'}`}>
+            <div className="text-sm text-gray-600">Coste Total</div>
+            <div className={`text-3xl font-bold ${isWithinBudget() ? 'text-green-700' : 'text-red-700'}`}>
+              {totalPPP} PPP
+            </div>
+          </div>
+
+          <button
+            onClick={exportItem}
+            disabled={!item.name || !isWithinBudget()}
+            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2 px-4 rounded-lg font-semibold hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Exportar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ItemCreator;
