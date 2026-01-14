@@ -21,153 +21,245 @@
 </head>
 <body>
     <div id="root"></div>
+    <script type="text/babel" src="data.js"></script>
+    <script type="text/babel" src="app.js"></script>
+</body>
+</html>// Iconos SVG
+const BookIcon = () => (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+);
 
-    <script type="text/babel">
-        const { useState } = React;
+const Trash2Icon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+);
 
-        // Iconos SVG simples
-        const BookIcon = () => (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-        );
+const DownloadIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+);
 
-        const Trash2Icon = () => (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-        );
+// Datos del sistema
+const RARITIES = {
+    'Poco Común': { min: 3, max: 5, price: '200-500 L' },
+    'Raro': { min: 6, max: 10, price: '500-2,000 L' },
+    'Muy Raro': { min: 11, max: 15, price: '2,000-10,000 L' },
+    'Legendario': { min: 16, max: 25, price: 'Sin precio' }
+};
 
-        const DownloadIcon = () => (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-        );
+const PROPERTIES = {
+    'Bonificadores a Atributos': [
+        { name: '+1 a un Atributo', cost: 3, note: 'Máximo +3 en un objeto' },
+        { name: '+1 a dos Atributos', cost: 5, note: 'Muy raro' },
+        { name: '+1 a los tres Atributos', cost: 8, note: 'Solo Legendario+' }
+    ],
+    'Bonificadores a Combate': [
+        { name: '+1 a tiradas de ataque', cost: 2, note: 'Solo armas' },
+        { name: '+1 al daño', cost: 2, note: 'Solo armas' },
+        { name: '+1 a Defensa', cost: 2, note: 'Armaduras, escudos' },
+        { name: '+1 a Iniciativa', cost: 2, note: 'Accesorios, armas ligeras' }
+    ],
+    'Bonificadores a Recursos': [
+        { name: '+5 Resistencia máxima', cost: 1, note: 'Acumulable hasta +15' },
+        { name: '+3 metros de movimiento', cost: 1, note: 'Acumulable hasta +9' },
+        { name: '+1 Potenciación Naturaleza', cost: 2, note: 'Especificar cuál' },
+        { name: '+1 Potenciación Concepto', cost: 2, note: 'Especificar cuál' }
+    ],
+    'Curación y Restauración': [
+        { name: 'Curación Menor (1d6+2)', cost: 1, note: 'Restaura Resistencia' },
+        { name: 'Curación (2d6+2)', cost: 2, note: 'Restaura Resistencia' },
+        { name: 'Curación Mayor (3d6+4)', cost: 3, note: 'Restaura Resistencia' },
+        { name: 'Curación Completa', cost: 5, note: 'Restaura toda Resistencia' }
+    ],
+    'Propiedades de Arma': [
+        { name: 'Alcance Extendido', cost: 2, note: '+3m alcance' },
+        { name: 'Retorno Automático', cost: 2, note: 'Arma vuelve' },
+        { name: 'Vampírica', cost: 4, note: 'Recupera Resistencia' },
+        { name: 'Penetración de Armadura', cost: 3, note: 'Ignora 3 pts armadura' }
+    ],
+    'Propiedades de Armadura': [
+        { name: 'Sin Penalización Sigilo', cost: 2, note: 'Elimina penalización' },
+        { name: 'Resistencia a Tipo Daño', cost: 4, note: 'Mitad de daño' },
+        { name: 'Inmunidad a Estado', cost: 3, note: 'Envenenado, Asustado, etc' },
+        { name: 'Absorción', cost: 2, note: 'Ignora 1 pto daño' }
+    ],
+    'Movimiento y Sentidos': [
+        { name: 'Pies Ligeros', cost: 2, note: 'Ignora terreno difícil' },
+        { name: 'Vuelo Limitado', cost: 5, note: '18m, 1/día, 3 rondas' },
+        { name: 'Visión en Oscuridad', cost: 2, note: 'Ver en oscuridad 15m' },
+        { name: 'Sentidos Agudos', cost: 3, note: 'Ventaja en Percepción' }
+    ],
+    'Utilidad Social': [
+        { name: 'Traductor Universal', cost: 3, note: 'Comprender idiomas' },
+        { name: 'Presencia Intimidante', cost: 2, note: 'Ventaja intimidación' },
+        { name: 'Encanto Sutil', cost: 2, note: 'Ventaja persuasión' },
+        { name: 'Detección de Mentiras', cost: 3, note: 'Ventaja detectar engaños' }
+    ]
+};
 
-        const RARITIES = {
-            'Poco Común': { min: 3, max: 5, price: '200-500 L' },
-            'Raro': { min: 6, max: 10, price: '500-2,000 L' },
-            'Muy Raro': { min: 11, max: 15, price: '2,000-10,000 L' },
-            'Legendario': { min: 16, max: 25, price: 'Sin precio' }
-        };
+const REQUIREMENTS = [
+    { name: 'Sintonía', cost: -1, desc: 'Descanso largo para activar' },
+    { name: 'Herencia Específica', cost: -2, desc: 'Solo una Herencia definida' },
+    { name: 'Concepto Específico', cost: -2, desc: 'Requiere Concepto' },
+    { name: 'Atributo Mínimo', cost: -1, desc: 'Valor mínimo requerido' },
+    { name: 'Senda Específica', cost: -2, desc: 'Solo una Senda definida' },
+    { name: 'Personalidad', cost: -2, desc: 'Solo una Naturaleza definida' }
+];
 
-        const PROPERTIES = {
-            'Bonificadores a Atributos': [
-                { name: '+1 a un Atributo', cost: 3, note: 'Máximo +3 en un objeto' },
-                { name: '+1 a dos Atributos', cost: 5, note: 'Muy raro' },
-                { name: '+1 a los tres Atributos', cost: 8, note: 'Solo Legendario+' }
-            ],
-            'Bonificadores a Combate': [
-                { name: '+1 a tiradas de ataque', cost: 2, note: 'Solo armas' },
-                { name: '+1 al daño', cost: 2, note: 'Solo armas' },
-                { name: '+1 a Defensa', cost: 2, note: 'Armaduras, escudos' },
-                { name: '+1 a Iniciativa', cost: 2, note: 'Accesorios, armas ligeras' }
-            ],
-            'Bonificadores a Recursos': [
-                { name: '+5 Resistencia máxima', cost: 1, note: 'Acumulable hasta +15' },
-                { name: '+3 metros de movimiento', cost: 1, note: 'Acumulable hasta +9' },
-                { name: '+1 Potenciación Naturaleza', cost: 2, note: 'Especificar cuál' },
-                { name: '+1 Potenciación Concepto', cost: 2, note: 'Especificar cuál' }
-            ],
-            'Curación y Restauración': [
-                { name: 'Curación Menor (1d6+2)', cost: 1, note: 'Restaura Resistencia' },
-                { name: 'Curación (2d6+2)', cost: 2, note: 'Restaura Resistencia' },
-                { name: 'Curación Mayor (3d6+4)', cost: 3, note: 'Restaura Resistencia' },
-                { name: 'Curación Completa', cost: 5, note: 'Restaura toda Resistencia' }
-            ],
-            'Propiedades de Arma': [
-                { name: 'Alcance Extendido', cost: 2, note: '+3m alcance' },
-                { name: 'Retorno Automático', cost: 2, note: 'Arma vuelve' },
-                { name: 'Vampírica', cost: 4, note: 'Recupera Resistencia' },
-                { name: 'Penetración de Armadura', cost: 3, note: 'Ignora 3 pts armadura' }
-            ],
-            'Propiedades de Armadura': [
-                { name: 'Sin Penalización Sigilo', cost: 2, note: 'Elimina penalización' },
-                { name: 'Resistencia a Tipo Daño', cost: 4, note: 'Mitad de daño' },
-                { name: 'Inmunidad a Estado', cost: 3, note: 'Envenenado, Asustado, etc' },
-                { name: 'Absorción', cost: 2, note: 'Ignora 1 pto daño' }
-            ],
-            'Movimiento y Sentidos': [
-                { name: 'Pies Ligeros', cost: 2, note: 'Ignora terreno difícil' },
-                { name: 'Vuelo Limitado', cost: 5, note: '18m, 1/día, 3 rondas' },
-                { name: 'Visión en Oscuridad', cost: 2, note: 'Ver en oscuridad 15m' },
-                { name: 'Sentidos Agudos', cost: 3, note: 'Ventaja en Percepción' }
-            ],
-            'Utilidad Social': [
-                { name: 'Traductor Universal', cost: 3, note: 'Comprender idiomas' },
-                { name: 'Presencia Intimidante', cost: 2, note: 'Ventaja intimidación' },
-                { name: 'Encanto Sutil', cost: 2, note: 'Ventaja persuasión' },
-                { name: 'Detección de Mentiras', cost: 3, note: 'Ventaja detectar engaños' }
-            ]
-        };
+const CURSES = [
+    { name: 'Menor', cost: 2, desc: 'Desventaja situacional, -1 Atributo, vulnerabilidad menor' },
+    { name: 'Mayor', cost: 4, desc: 'Penalización -2 Atributo, vulnerabilidad mayor, adicción' },
+    { name: 'Severa', cost: 6, desc: 'Transformación gradual, precio de sangre, parasitismo' },
+    { name: 'Legendaria', cost: 8, desc: 'Pérdida de humanidad, posesión, condena divina' }
+];
 
-        const CONSUMABLE_TYPES = {
-            'Poción': { formula: (ppp) => ppp * 50, action: 'Acción Rápida (beber)', icon: '🧪' },
-            'Pergamino': { formula: (ppp) => ppp * 75, action: 'Acción Principal + Salvación', icon: '📜' },
-            'Talismán': { formula: (ppp) => ppp * 60, action: 'Activación automática', icon: '✨' },
-            'Aceite': { formula: (ppp) => ppp * 40, action: '1 minuto aplicar', icon: '🫙' }
-        };
+const CONSUMABLE_TYPES = {
+    'Poción': { formula: (ppp) => ppp * 50, action: 'Acción Rápida (beber)', icon: '🧪' },
+    'Pergamino': { formula: (ppp) => ppp * 75, action: 'Acción Principal + Salvación', icon: '📜' },
+    'Talismán': { formula: (ppp) => ppp * 60, action: 'Activación automática', icon: '✨' },
+    'Aceite': { formula: (ppp) => ppp * 40, action: '1 minuto aplicar', icon: '🫙' }
+};const { useState } = React;
 
-        const ItemCreator = () => {
-            const [activeTab, setActiveTab] = useState('objects');
-            const [item, setItem] = useState({ name: '', rarity: 'Raro', properties: [] });
-            const [consumable, setConsumable] = useState({ name: '', type: 'Poción', properties: [], quantity: 1 });
-            const [selectedCategory, setSelectedCategory] = useState('');
+const ItemCreator = () => {
+    const [activeTab, setActiveTab] = useState('objects');
+    const [item, setItem] = useState({ 
+        name: '', 
+        rarity: 'Raro', 
+        properties: [], 
+        requirements: [], 
+        curses: [] 
+    });
+    const [consumable, setConsumable] = useState({ 
+        name: '', 
+        type: 'Poción', 
+        properties: [], 
+        requirements: [],
+        curses: [],
+        quantity: 1 
+    });
+    const [selectedCategory, setSelectedCategory] = useState('');
 
-            const itemPPP = item.properties.reduce((sum, p) => sum + p.cost, 0);
-            const consumablePPP = consumable.properties.reduce((sum, p) => sum + p.cost, 0);
+    const calculatePPP = (data) => {
+        const propsCost = data.properties.reduce((sum, p) => sum + p.cost, 0);
+        const reqsCost = data.requirements.reduce((sum, r) => sum + r.cost, 0);
+        const cursesCost = data.curses.reduce((sum, c) => sum + c.cost, 0);
+        return propsCost + reqsCost + cursesCost;
+    };
 
-            const addProperty = (prop, isConsumable = false) => {
-                const setter = isConsumable ? setConsumable : setItem;
-                setter(prev => ({
-                    ...prev,
-                    properties: [...prev.properties, { ...prop, id: Date.now() }]
-                }));
-            };
+    const itemPPP = calculatePPP(item);
+    const consumablePPP = calculatePPP(consumable);
 
-            const removeProperty = (id, isConsumable = false) => {
-                const setter = isConsumable ? setConsumable : setItem;
-                setter(prev => ({
-                    ...prev,
-                    properties: prev.properties.filter(p => p.id !== id)
-                }));
-            };
+    const addProperty = (prop, isConsumable = false) => {
+        const setter = isConsumable ? setConsumable : setItem;
+        setter(prev => ({
+            ...prev,
+            properties: [...prev.properties, { ...prop, id: Date.now() }]
+        }));
+    };
 
-            const getRarityFromPPP = (ppp) => {
-                for (const [rarity, range] of Object.entries(RARITIES)) {
-                    if (ppp >= range.min && ppp <= range.max) return rarity;
-                }
-                return 'Fuera de rango';
-            };
+    const removeProperty = (id, isConsumable = false) => {
+        const setter = isConsumable ? setConsumable : setItem;
+        setter(prev => ({
+            ...prev,
+            properties: prev.properties.filter(p => p.id !== id)
+        }));
+    };
 
-            const exportData = (isConsumable = false) => {
-                if (isConsumable) {
-                    const typeData = CONSUMABLE_TYPES[consumable.type];
-                    const unitPrice = typeData.formula(consumablePPP);
-                    const text = `${consumable.type}: ${consumable.name}
+    const addRequirement = (req, isConsumable = false) => {
+        const data = isConsumable ? consumable : item;
+        const setter = isConsumable ? setConsumable : setItem;
+        
+        if (data.requirements.length >= 3) {
+            alert('Máximo 3 requisitos permitidos');
+            return;
+        }
+        
+        setter(prev => ({
+            ...prev,
+            requirements: [...prev.requirements, { ...req, id: Date.now() }]
+        }));
+    };
+
+    const removeRequirement = (id, isConsumable = false) => {
+        const setter = isConsumable ? setConsumable : setItem;
+        setter(prev => ({
+            ...prev,
+            requirements: prev.requirements.filter(r => r.id !== id)
+        }));
+    };
+
+    const addCurse = (curse, isConsumable = false) => {
+        const data = isConsumable ? consumable : item;
+        const setter = isConsumable ? setConsumable : setItem;
+        
+        if (data.curses.length >= 2) {
+            alert('Máximo 2 maldiciones permitidas');
+            return;
+        }
+        
+        setter(prev => ({
+            ...prev,
+            curses: [...prev.curses, { ...curse, id: Date.now(), details: '' }]
+        }));
+    };
+
+    const removeCurse = (id, isConsumable = false) => {
+        const setter = isConsumable ? setConsumable : setItem;
+        setter(prev => ({
+            ...prev,
+            curses: prev.curses.filter(c => c.id !== id)
+        }));
+    };
+
+    const updateCurseDetails = (id, details, isConsumable = false) => {
+        const setter = isConsumable ? setConsumable : setItem;
+        setter(prev => ({
+            ...prev,
+            curses: prev.curses.map(c => c.id === id ? { ...c, details } : c)
+        }));
+    };
+
+    const getRarityFromPPP = (ppp) => {
+        for (const [rarity, range] of Object.entries(RARITIES)) {
+            if (ppp >= range.min && ppp <= range.max) return rarity;
+        }
+        return 'Fuera de rango';
+    };
+
+    const exportData = (isConsumable = false) => {
+        if (isConsumable) {
+            const typeData = CONSUMABLE_TYPES[consumable.type];
+            const unitPrice = typeData.formula(consumablePPP);
+            const text = `${consumable.type}: ${consumable.name}
 Rareza Equivalente: ${getRarityFromPPP(consumablePPP)} (${consumablePPP} PPP)
 
 EFECTOS:
 ${consumable.properties.map(p => `• ${p.name} - ${p.note}`).join('\n')}
 
+${consumable.requirements.length > 0 ? `REQUISITOS:\n${consumable.requirements.map(r => `• ${r.name} (${r.cost} PPP) - ${r.desc}`).join('\n')}\n` : ''}
+${consumable.curses.length > 0 ? `MALDICIONES:\n${consumable.curses.map(c => `• Maldición ${c.name} (+${c.cost} PPP) - ${c.details || c.desc}`).join('\n')}\n` : ''}
+
 Uso: ${typeData.action}
 
 COSTE:
+PPP Base: ${consumablePPP}
 Precio Unitario: ${unitPrice} L
 Cantidad: ${consumable.quantity}
-Precio Total: ${unitPrice * consumable.quantity} L
-
-Fórmula: ${consumablePPP} PPP × ${typeData.formula(1)} = ${unitPrice} L`;
-                    
-                    const blob = new Blob([text], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${consumable.name || 'consumible'}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                } else {
-                    const text = `${item.name}
+Precio Total: ${unitPrice * consumable.quantity} L`;
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${consumable.name || 'consumible'}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            const text = `${item.name}
 Rareza: ${item.rarity} (${itemPPP} PPP)
 Presupuesto: ${RARITIES[item.rarity].min}-${RARITIES[item.rarity].max} PPP
 Precio Aproximado: ${RARITIES[item.rarity].price}
@@ -175,367 +267,511 @@ Precio Aproximado: ${RARITIES[item.rarity].price}
 PROPIEDADES:
 ${item.properties.map(p => `• ${p.name} (${p.cost} PPP) - ${p.note}`).join('\n')}
 
+${item.requirements.length > 0 ? `REQUISITOS:\n${item.requirements.map(r => `• ${r.name} (${r.cost} PPP) - ${r.desc}`).join('\n')}\n` : ''}
+${item.curses.length > 0 ? `MALDICIONES:\n${item.curses.map(c => `• Maldición ${c.name} (+${c.cost} PPP) - ${c.details || c.desc}`).join('\n')}\n` : ''}
+
 Coste Total: ${itemPPP} PPP`;
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${item.name || 'objeto'}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+            <div className="max-w-6xl mx-auto">
+                <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white p-6 rounded-lg shadow-xl mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <BookIcon />
+                        <div>
+                            <h1 className="text-3xl font-bold">Creador de Objetos PAPA</h1>
+                            <p className="text-amber-100">Sistema de PPP con Requisitos y Maldiciones</p>
+                        </div>
+                    </div>
                     
-                    const blob = new Blob([text], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${item.name || 'objeto'}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                }
-            };
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActiveTab('objects')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'objects' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
+                        >
+                            📿 Permanentes
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('consumables')}
+                            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'consumables' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
+                        >
+                            🧪 Consumibles
+                        </button>
+                    </div>
+                </header>
 
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
-                    <div className="max-w-6xl mx-auto">
-                        <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white p-6 rounded-lg shadow-xl mb-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <BookIcon />
-                                <div>
-                                    <h1 className="text-3xl font-bold">Creador de Objetos PAPA</h1>
-                                    <p className="text-amber-100">Sistema de PPP unificado</p>
-                                </div>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setActiveTab('objects')}
-                                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'objects' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
-                                >
-                                    📿 Objetos Permanentes
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('consumables')}
-                                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'consumables' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
-                                >
-                                    🧪 Consumibles
-                                </button>
-                            </div>
-                        </header>
+                {activeTab === 'consumables' ? (
+                    <ConsumablesTab
+                        consumable={consumable}
+                        setConsumable={setConsumable}
+                        consumablePPP={consumablePPP}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        addProperty={addProperty}
+                        removeProperty={removeProperty}
+                        addRequirement={addRequirement}
+                        removeRequirement={removeRequirement}
+                        addCurse={addCurse}
+                        removeCurse={removeCurse}
+                        updateCurseDetails={updateCurseDetails}
+                        getRarityFromPPP={getRarityFromPPP}
+                        exportData={exportData}
+                    />
+                ) : (
+                    <ObjectsTab
+                        item={item}
+                        setItem={setItem}
+                        itemPPP={itemPPP}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        addProperty={addProperty}
+                        removeProperty={removeProperty}
+                        addRequirement={addRequirement}
+                        removeRequirement={removeRequirement}
+                        addCurse={addCurse}
+                        removeCurse={removeCurse}
+                        updateCurseDetails={updateCurseDetails}
+                        exportData={exportData}
+                    />
+                )}
+            </div>
+        </div>
+    );
+};
 
-                        {activeTab === 'consumables' ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 space-y-4">
-                                    <div className="bg-white rounded-lg shadow-lg p-6">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Información Básica</h2>
-                                        <input
-                                            type="text"
-                                            value={consumable.name}
-                                            onChange={(e) => setConsumable(prev => ({ ...prev, name: e.target.value }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                            placeholder="Nombre del consumible"
-                                        />
-                                        <select
-                                            value={consumable.type}
-                                            onChange={(e) => setConsumable(prev => ({ ...prev, type: e.target.value }))}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
-                                        >
-                                            {Object.entries(CONSUMABLE_TYPES).map(([type, data]) => (
-                                                <option key={type} value={type}>{data.icon} {type}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+// Componente de Consumibles
+const ConsumablesTab = ({ 
+    consumable, setConsumable, consumablePPP, selectedCategory, setSelectedCategory,
+    addProperty, removeProperty, addRequirement, removeRequirement,
+    addCurse, removeCurse, updateCurseDetails, getRarityFromPPP, exportData
+}) => {
+    const typeData = CONSUMABLE_TYPES[consumable.type];
+    const unitPrice = typeData.formula(consumablePPP);
+    const totalPrice = unitPrice * consumable.quantity;
 
-                                    <div className="bg-white rounded-lg shadow-lg p-6">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Efectos</h2>
-                                        <p className="text-sm text-gray-600 mb-3 bg-blue-50 p-3 rounded border border-blue-200">
-                                            💡 Los consumibles usan el mismo catálogo de propiedades que los objetos permanentes. La diferencia está en la fórmula de precio según el tipo.
-                                        </p>
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500"
-                                        >
-                                            <option value="">-- Seleccionar categoría --</option>
-                                            {Object.keys(PROPERTIES).map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+                {/* Info Básica */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-bold text-amber-900 mb-4">Información</h2>
+                    <input
+                        type="text"
+                        value={consumable.name}
+                        onChange={(e) => setConsumable(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md mb-3"
+                        placeholder="Nombre"
+                    />
+                    <select
+                        value={consumable.type}
+                        onChange={(e) => setConsumable(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md"
+                    >
+                        {Object.entries(CONSUMABLE_TYPES).map(([type, data]) => (
+                            <option key={type} value={type}>{data.icon} {type}</option>
+                        ))}
+                    </select>
+                </div>
 
-                                        {selectedCategory && (
-                                            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto border border-gray-200 rounded p-3">
-                                                {PROPERTIES[selectedCategory].map((prop, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => addProperty(prop, true)}
-                                                        className="w-full text-left p-3 border border-gray-200 rounded hover:bg-amber-50 transition-colors"
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="flex-1">
-                                                                <div className="font-medium text-gray-900">{prop.name}</div>
-                                                                <div className="text-xs text-gray-600 mt-1">{prop.note}</div>
-                                                            </div>
-                                                            <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
-                                                                {prop.cost} PPP
-                                                            </span>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                {/* Propiedades */}
+                <PropertySection
+                    title="Efectos"
+                    items={consumable.properties}
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
+                    onAdd={(prop) => addProperty(prop, true)}
+                    onRemove={(id) => removeProperty(id, true)}
+                    colorClass="purple"
+                />
 
-                                        <div className="space-y-2">
-                                            <h3 className="font-semibold text-gray-700">Efectos Agregados:</h3>
-                                            {consumable.properties.length === 0 ? (
-                                                <p className="text-gray-500 text-sm italic">No hay efectos agregados</p>
-                                            ) : (
-                                                consumable.properties.map(prop => (
-                                                    <div key={prop.id} className="flex justify-between items-center bg-purple-50 p-3 rounded border border-purple-200">
-                                                        <div className="flex-1">
-                                                            <div className="font-medium text-gray-900">{prop.name}</div>
-                                                            <div className="text-xs text-gray-600">{prop.note}</div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold">
-                                                                {prop.cost} PPP
-                                                            </span>
-                                                            <button 
-                                                                onClick={() => removeProperty(prop.id, true)} 
-                                                                className="text-red-600 hover:text-red-800 p-1"
-                                                            >
-                                                                <Trash2Icon />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
+                {/* Requisitos */}
+                <RequirementSection
+                    items={consumable.requirements}
+                    onAdd={(req) => addRequirement(req, true)}
+                    onRemove={(id) => removeRequirement(id, true)}
+                />
 
-                                    <div className="bg-white rounded-lg shadow-lg p-6">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Cantidad</h2>
-                                        <div className="flex items-center gap-4">
-                                            <button
-                                                onClick={() => setConsumable(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                                                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold transition-colors"
-                                            >-</button>
-                                            <input
-                                                type="number"
-                                                value={consumable.quantity}
-                                                onChange={(e) => setConsumable(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-                                                className="w-20 text-center text-2xl font-bold border border-gray-300 rounded px-2 py-1"
-                                            />
-                                            <button
-                                                onClick={() => setConsumable(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                                                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold transition-colors"
-                                            >+</button>
-                                        </div>
-                                    </div>
-                                </div>
+                {/* Maldiciones */}
+                <CurseSection
+                    items={consumable.curses}
+                    onAdd={(curse) => addCurse(curse, true)}
+                    onRemove={(id) => removeCurse(id, true)}
+                    onUpdateDetails={(id, details) => updateCurseDetails(id, details, true)}
+                />
 
-                                <div>
-                                    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
-                                        <div className="space-y-4">
-                                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                                <div className="text-sm text-gray-600 mb-1">Tipo</div>
-                                                <div className="text-xl font-bold text-purple-900">
-                                                    {CONSUMABLE_TYPES[consumable.type].icon} {consumable.type}
-                                                </div>
-                                                <div className="text-xs text-gray-600 mt-2">
-                                                    {CONSUMABLE_TYPES[consumable.type].action}
-                                                </div>
-                                            </div>
-                                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                                                <div className="text-sm text-gray-600 mb-1">Rareza Equivalente</div>
-                                                <div className="text-lg font-bold text-amber-900">{getRarityFromPPP(consumablePPP)}</div>
-                                                <div className="text-xs text-gray-600 mt-1">Basado en {consumablePPP} PPP</div>
-                                            </div>
-                                            <div className="space-y-2 text-sm border-t pt-4">
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">PPP Base:</span>
-                                                    <span className="font-bold text-amber-700">{consumablePPP} PPP</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">Precio Unitario:</span>
-                                                    <span className="font-bold text-green-700">
-                                                        {CONSUMABLE_TYPES[consumable.type].formula(consumablePPP)} L
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">Cantidad:</span>
-                                                    <span className="font-bold text-amber-700">×{consumable.quantity}</span>
-                                                </div>
-                                                <div className="flex justify-between pt-3 border-t-2 border-amber-300">
-                                                    <span className="text-lg font-semibold text-gray-700">TOTAL:</span>
-                                                    <span className="text-2xl font-bold text-amber-900">
-                                                        {CONSUMABLE_TYPES[consumable.type].formula(consumablePPP) * consumable.quantity} L
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => exportData(true)}
-                                                disabled={!consumable.name || consumablePPP === 0}
-                                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                                            >
-                                                <DownloadIcon />
-                                                Exportar Consumible
-                                            </button>
-                                            <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                                                <div className="text-sm font-semibold text-blue-900 mb-2">📋 Fórmulas de Precio</div>
-                                                <div className="text-xs text-gray-700 space-y-1">
-                                                    <div><strong>Poción:</strong> PPP × 50 L</div>
-                                                    <div><strong>Pergamino:</strong> PPP × 75 L</div>
-                                                    <div><strong>Talismán:</strong> PPP × 60 L</div>
-                                                    <div><strong>Aceite:</strong> PPP × 40 L</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 space-y-4">
-                                    <div className="bg-white rounded-lg shadow-lg p-6">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Información Básica</h2>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Nombre del Objeto
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => setItem(prev => ({ ...prev, name: e.target.value }))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                                    placeholder="Ej: Espada del Alba Carmesí"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Rareza
-                                                </label>
-                                                <select
-                                                    value={item.rarity}
-                                                    onChange={(e) => setItem(prev => ({ ...prev, rarity: e.target.value }))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
-                                                >
-                                                    {Object.keys(RARITIES).map(r => (
-                                                        <option key={r} value={r}>{r}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-lg shadow-lg p-6">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Propiedades</h2>
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500"
-                                        >
-                                            <option value="">-- Seleccionar categoría --</option>
-                                            {Object.keys(PROPERTIES).map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
-
-                                        {selectedCategory && (
-                                            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto border border-gray-200 rounded p-3">
-                                                {PROPERTIES[selectedCategory].map((prop, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => addProperty(prop, false)}
-                                                        className="w-full text-left p-3 border border-gray-200 rounded hover:bg-amber-50 transition-colors"
-                                                    >
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="flex-1">
-                                                                <div className="font-medium text-gray-900">{prop.name}</div>
-                                                                <div className="text-xs text-gray-600 mt-1">{prop.note}</div>
-                                                            </div>
-                                                            <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
-                                                                {prop.cost} PPP
-                                                            </span>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-2">
-                                            <h3 className="font-semibold text-gray-700">Propiedades Agregadas:</h3>
-                                            {item.properties.length === 0 ? (
-                                                <p className="text-gray-500 text-sm italic">No hay propiedades agregadas</p>
-                                            ) : (
-                                                item.properties.map(prop => (
-                                                    <div key={prop.id} className="flex justify-between items-center bg-amber-50 p-3 rounded border border-amber-200">
-                                                        <div className="flex-1">
-                                                            <div className="font-medium text-gray-900">{prop.name}</div>
-                                                            <div className="text-xs text-gray-600">{prop.note}</div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm font-bold">
-                                                                {prop.cost} PPP
-                                                            </span>
-                                                            <button 
-                                                                onClick={() => removeProperty(prop.id, false)} 
-                                                                className="text-red-600 hover:text-red-800 p-1">
-                                                                <Trash2Icon />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
-                                        <div className="space-y-4">
-                                            <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-4 rounded-lg">
-                                                <div className="text-sm text-gray-600 mb-1">Presupuesto {item.rarity}</div>
-                                                <div className="text-2xl font-bold text-amber-900">
-                                                    {RARITIES[item.rarity].min} - {RARITIES[item.rarity].max} PPP
-                                                </div>
-                                                <div className="text-xs text-gray-600 mt-1">
-                                                    Precio: {RARITIES[item.rarity].price}
-                                                </div>
-                                            </div>
-                                            <div className={`p-4 rounded-lg ${itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max ? 'bg-green-100' : 'bg-red-100'}`}>
-                                                <div className="text-sm text-gray-600 mb-1">Coste Total</div>
-                                                <div className={`text-3xl font-bold ${itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max ? 'text-green-700' : 'text-red-700'}`}>
-                                                    {itemPPP} PPP
-                                                </div>
-                                                {!(itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max) && itemPPP > 0 && (
-                                                    <div className="text-xs text-red-600 mt-2">
-                                                        ⚠️ Fuera del presupuesto
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => exportData(false)}
-                                                disabled={!item.name || itemPPP === 0}
-                                                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                                            >
-                                                <DownloadIcon />
-                                                Exportar Objeto
-                                            </button>
-                                            <div className="bg-amber-50 p-3 rounded border border-amber-200">
-                                                <div className="text-sm font-semibold text-amber-900 mb-2">💡 Principios de Diseño</div>
-                                                <ul className="text-xs text-gray-700 space-y-1">
-                                                    <li>• Cada objeto cuenta una historia</li>
-                                                    <li>• El poder tiene precio</li>
-                                                    <li>• La versatilidad es poder</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                {/* Cantidad */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-bold text-amber-900 mb-4">Cantidad</h2>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setConsumable(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                            className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold"
+                        >-</button>
+                        <input
+                            type="number"
+                            value={consumable.quantity}
+                            onChange={(e) => setConsumable(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                            className="w-20 text-center text-2xl font-bold border rounded"
+                        />
+                        <button
+                            onClick={() => setConsumable(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                            className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold"
+                        >+</button>
                     </div>
                 </div>
-            );
-        };
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ItemCreator />);
-    </script>
-</body>
-</html>
+            {/* Resumen */}
+            <div>
+                <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+                    <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+                    <div className="space-y-4">
+                        <div className="bg-purple-50 p-4 rounded-lg">
+                            <div className="text-sm text-gray-600">Tipo</div>
+                            <div className="text-xl font-bold">{typeData.icon} {consumable.type}</div>
+                        </div>
+                        <div className="bg-amber-50 p-4 rounded-lg">
+                            <div className="text-sm text-gray-600">Rareza</div>
+                            <div className="text-lg font-bold">{getRarityFromPPP(consumablePPP)}</div>
+                            <div className="text-xs text-gray-600">{consumablePPP} PPP</div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span>Propiedades:</span>
+                                <span className="font-bold">
+                                    {consumable.properties.reduce((s, p) => s + p.cost, 0)} PPP
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Requisitos:</span>
+                                <span className="font-bold text-green-600">
+                                    {consumable.requirements.reduce((s, r) => s + r.cost, 0)} PPP
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Maldiciones:</span>
+                                <span className="font-bold text-purple-600">
+                                    +{consumable.curses.reduce((s, c) => s + c.cost, 0)} PPP
+                                </span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t">
+                                <span>Precio Unit:</span>
+                                <span className="font-bold">{unitPrice} L</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Cantidad:</span>
+                                <span className="font-bold">×{consumable.quantity}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t-2">
+                                <span className="font-bold">TOTAL:</span>
+                                <span className="text-2xl font-bold text-amber-900">{totalPrice} L</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => exportData(true)}
+                            disabled={!consumable.name}
+                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <DownloadIcon />Exportar
+                        </button>
+                        <div className="bg-blue-50 p-3 rounded text-xs">
+                            <div className="font-bold mb-1">📋 Fórmulas</div>
+                            <div>Poción: PPP × 50 L</div>
+                            <div>Pergamino: PPP × 75 L</div>
+                            <div>Talismán: PPP × 60 L</div>
+                            <div>Aceite: PPP × 40 L</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Componente de Objetos Permanentes
+const ObjectsTab = ({ 
+    item, setItem, itemPPP, selectedCategory, setSelectedCategory,
+    addProperty, removeProperty, addRequirement, removeRequirement,
+    addCurse, removeCurse, updateCurseDetails, exportData
+}) => {
+    const isValid = itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max;
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+                {/* Info Básica */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-xl font-bold text-amber-900 mb-4">Información</h2>
+                    <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => setItem(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md mb-3"
+                        placeholder="Nombre"
+                    />
+                    <select
+                        value={item.rarity}
+                        onChange={(e) => setItem(prev => ({ ...prev, rarity: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-md"
+                    >
+                        {Object.keys(RARITIES).map(r => (
+                            <option key={r} value={r}>{r}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Propiedades */}
+                <PropertySection
+                    title="Propiedades"
+                    items={item.properties}
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
+                    onAdd={(prop) => addProperty(prop, false)}
+                    onRemove={(id) => removeProperty(id, false)}
+                    colorClass="amber"
+                />
+
+                {/* Requisitos */}
+                <RequirementSection
+                    items={item.requirements}
+                    onAdd={(req) => addRequirement(req, false)}
+                    onRemove={(id) => removeRequirement(id, false)}
+                />
+
+                {/* Maldiciones */}
+                <CurseSection
+                    items={item.curses}
+                    onAdd={(curse) => addCurse(curse, false)}
+                    onRemove={(id) => removeCurse(id, false)}
+                    onUpdateDetails={(id, details) => updateCurseDetails(id, details, false)}
+                />
+            </div>
+
+            {/* Resumen */}
+            <div>
+                <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+                    <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+                    <div className="space-y-4">
+                        <div className="bg-amber-50 p-4 rounded-lg">
+                            <div className="text-sm text-gray-600">Presupuesto {item.rarity}</div>
+                            <div className="text-2xl font-bold">
+                                {RARITIES[item.rarity].min}-{RARITIES[item.rarity].max} PPP
+                            </div>
+                        </div>
+                        <div className={`p-4 rounded-lg ${isValid ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <div className="text-sm text-gray-600">Coste Total</div>
+                            <div className={`text-3xl font-bold ${isValid ? 'text-green-700' : 'text-red-700'}`}>
+                                {itemPPP} PPP
+                            </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span>Propiedades:</span>
+                                <span className="font-bold">{item.properties.reduce((s, p) => s + p.cost, 0)} PPP</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Requisitos:</span>
+                                <span className="font-bold text-green-600">
+                                    {item.requirements.reduce((s, r) => s + r.cost, 0)} PPP
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Maldiciones:</span>
+                                <span className="font-bold text-purple-600">
+                                    +{item.curses.reduce((s, c) => s + c.cost, 0)} PPP
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => exportData(false)}
+                            disabled={!item.name}
+                            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <DownloadIcon />Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Componentes reutilizables
+const PropertySection = ({ title, items, selectedCategory, setSelectedCategory, onAdd, onRemove, colorClass }) => (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold text-amber-900 mb-4">{title}</h2>
+        <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md mb-3"
+        >
+            <option value="">Seleccionar categoría</option>
+            {Object.keys(PROPERTIES).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+            ))}
+        </select>
+
+        {selectedCategory && (
+            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto border rounded p-3">
+                {PROPERTIES[selectedCategory].map((prop, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => onAdd(prop)}
+                        className="w-full text-left p-2 border rounded hover:bg-amber-50"
+                    >
+                        <div className="flex justify-between">
+                            <div className="flex-1">
+                                <div className="font-medium">{prop.name}</div>
+                                <div className="text-xs text-gray-600">{prop.note}</div>
+                            </div>
+                            <span className={`bg-${colorClass}-600 text-white px-2 py-1 rounded text-sm font-bold ml-2`}>
+                                {prop.cost} PPP
+                            </span>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        )}
+
+        <div className="space-y-2">
+            {items.map(prop => (
+                <div key={prop.id} className={`flex justify-between items-center bg-${colorClass}-50 p-3 rounded`}>
+                    <div className="flex-1">
+                        <div className="font-medium">{prop.name}</div>
+                        <div className="text-xs text-gray-600">{prop.note}</div>
+                    </div>
+                    <div className="flex gap-2">
+                        <span className={`bg-${colorClass}-600 text-white px-2 py-1 rounded text-sm font-bold`}>
+                            {prop.cost} PPP
+                        </span>
+                        <button onClick={() => onRemove(prop.id)} className="text-red-600">
+                            <Trash2Icon />
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const RequirementSection = ({ items, onAdd, onRemove }) => (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold text-amber-900 mb-4">Requisitos (Reducen Coste)</h2>
+        <p className="text-sm text-gray-600 mb-3">Máximo 3 requisitos</p>
+        
+        <div className="space-y-2 mb-4">
+            {REQUIREMENTS.map((req, idx) => (
+                <button
+                    key={idx}
+                    onClick={() => onAdd(req)}
+                    className="w-full text-left p-2 border rounded hover:bg-green-50"
+                >
+                    <div className="flex justify-between">
+                        <div className="flex-1">
+                            <div className="font-medium">{req.name}</div>
+                            <div className="text-xs text-gray-600">{req.desc}</div>
+                        </div>
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
+                            {req.cost} PPP
+                        </span>
+                    </div>
+                </button>
+            ))}
+        </div>
+
+        <div className="space-y-2">
+            {items.map(req => (
+                <div key={req.id} className="flex justify-between items-center bg-green-50 p-3 rounded">
+                    <div className="flex-1">
+                        <div className="font-medium">{req.name}</div>
+                        <div className="text-xs text-gray-600">{req.desc}</div>
+                    </div>
+                    <div className="flex gap-2">
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
+                            {req.cost} PPP
+                        </span>
+                        <button onClick={() => onRemove(req.id)} className="text-red-600">
+                            <Trash2Icon />
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const CurseSection = ({ items, onAdd, onRemove, onUpdateDetails }) => (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold text-amber-900 mb-4">Maldiciones (Aumentan Poder)</h2>
+        <p className="text-sm text-gray-600 mb-3">Máximo 2 maldiciones</p>
+        
+        <div className="space-y-2 mb-4">
+            {CURSES.map((curse, idx) => (
+                <button
+                    key={idx}
+                    onClick={() => onAdd(curse)}
+                    className="w-full text-left p-2 border rounded hover:bg-purple-50"
+                >
+                    <div className="flex justify-between">
+                        <div className="flex-1">
+                            <div className="font-medium">Maldición {curse.name}</div>
+                            <div className="text-xs text-gray-600">{curse.desc}</div>
+                        </div>
+                        <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
+                            +{curse.cost} PPP
+                        </span>
+                    </div>
+                </button>
+            ))}
+        </div>
+
+        <div className="space-y-2">
+            {items.map(curse => (
+                <div key={curse.id} className="bg-purple-50 p-3 rounded">
+                    <div className="flex justify-between mb-2">
+                        <div className="font-medium">Maldición {curse.name}</div>
+                        <div className="flex gap-2">
+                            <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold">
+                                +{curse.cost} PPP
+                            </span>
+                            <button onClick={() => onRemove(curse.id)} className="text-red-600">
+                                <Trash2Icon />
+                            </button>
+                        </div>
+                    </div>
+                    <textarea
+                        value={curse.details}
+                        onChange={(e) => onUpdateDetails(curse.id, e.target.value)}
+                        placeholder="Describe los detalles específicos..."
+                        className="w-full px-3 py-2 border rounded text-sm"
+                        rows="2"
+                    />
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// Renderizar la aplicación
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<ItemCreator />);
+```
+
+---
+
+## 📁 Estructura final:
+```
+tu-repositorio/
+├── index.html    (estructura HTML básica)
+├── data.js       (datos: propiedades, requisitos, maldiciones)
+└── app.js        (lógica completa de la aplicación)
