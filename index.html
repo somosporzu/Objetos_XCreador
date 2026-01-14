@@ -1,364 +1,541 @@
-import React, { useState } from 'react';
-import { Trash2, Download, Book } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creador de Objetos PAPA</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const RARITIES = {
-  'Poco Común': { min: 3, max: 5, price: '200-500 L' },
-  'Raro': { min: 6, max: 10, price: '500-2,000 L' },
-  'Muy Raro': { min: 11, max: 15, price: '2,000-10,000 L' },
-  'Legendario': { min: 16, max: 25, price: 'Sin precio' }
-};
+    <script type="text/babel">
+        const { useState } = React;
 
-const PROPERTIES = {
-  'Bonificadores': [
-    { name: '+1 Atributo', cost: 3 },
-    { name: '+1 ataque', cost: 2 },
-    { name: '+1 daño', cost: 2 },
-    { name: '+1 Defensa', cost: 2 }
-  ],
-  'Curación': [
-    { name: 'Curación Menor (1d6+2)', cost: 1 },
-    { name: 'Curación (2d6+2)', cost: 2 },
-    { name: 'Curación Mayor (3d6+4)', cost: 3 },
-    { name: 'Curación Completa', cost: 5 }
-  ],
-  'Movimiento': [
-    { name: 'Pies Ligeros', cost: 2 },
-    { name: 'Vuelo 18m 10min', cost: 5 },
-    { name: 'Visión Oscuridad', cost: 2 }
-  ],
-  'Protección': [
-    { name: 'Resistencia a Daño', cost: 4 },
-    { name: 'Inmunidad Estado', cost: 3 },
-    { name: 'Absorción 1', cost: 2 }
-  ]
-};
+        // Iconos SVG simples
+        const BookIcon = () => (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+        );
 
-const CONSUMABLE_TYPES = {
-  'Poción': { formula: (ppp) => ppp * 50, action: 'Acción Rápida', icon: '🧪' },
-  'Pergamino': { formula: (ppp) => ppp * 75, action: 'Acción Principal', icon: '📜' },
-  'Talismán': { formula: (ppp) => ppp * 60, action: 'Automático', icon: '✨' },
-  'Aceite': { formula: (ppp) => ppp * 40, action: '1 minuto', icon: '🫙' }
-};
+        const Trash2Icon = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+        );
 
-const ItemCreator = () => {
-  const [activeTab, setActiveTab] = useState('objects');
-  const [item, setItem] = useState({ name: '', rarity: 'Raro', properties: [] });
-  const [consumable, setConsumable] = useState({ name: '', type: 'Poción', properties: [], quantity: 1 });
-  const [selectedCategory, setSelectedCategory] = useState('');
+        const DownloadIcon = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+        );
 
-  const itemPPP = item.properties.reduce((sum, p) => sum + p.cost, 0);
-  const consumablePPP = consumable.properties.reduce((sum, p) => sum + p.cost, 0);
+        const RARITIES = {
+            'Poco Común': { min: 3, max: 5, price: '200-500 L' },
+            'Raro': { min: 6, max: 10, price: '500-2,000 L' },
+            'Muy Raro': { min: 11, max: 15, price: '2,000-10,000 L' },
+            'Legendario': { min: 16, max: 25, price: 'Sin precio' }
+        };
 
-  const addProperty = (prop, isConsumable = false) => {
-    const setter = isConsumable ? setConsumable : setItem;
-    setter(prev => ({
-      ...prev,
-      properties: [...prev.properties, { ...prop, id: Date.now() }]
-    }));
-  };
+        const PROPERTIES = {
+            'Bonificadores a Atributos': [
+                { name: '+1 a un Atributo', cost: 3, note: 'Máximo +3 en un objeto' },
+                { name: '+1 a dos Atributos', cost: 5, note: 'Muy raro' },
+                { name: '+1 a los tres Atributos', cost: 8, note: 'Solo Legendario+' }
+            ],
+            'Bonificadores a Combate': [
+                { name: '+1 a tiradas de ataque', cost: 2, note: 'Solo armas' },
+                { name: '+1 al daño', cost: 2, note: 'Solo armas' },
+                { name: '+1 a Defensa', cost: 2, note: 'Armaduras, escudos' },
+                { name: '+1 a Iniciativa', cost: 2, note: 'Accesorios, armas ligeras' }
+            ],
+            'Bonificadores a Recursos': [
+                { name: '+5 Resistencia máxima', cost: 1, note: 'Acumulable hasta +15' },
+                { name: '+3 metros de movimiento', cost: 1, note: 'Acumulable hasta +9' },
+                { name: '+1 Potenciación Naturaleza', cost: 2, note: 'Especificar cuál' },
+                { name: '+1 Potenciación Concepto', cost: 2, note: 'Especificar cuál' }
+            ],
+            'Curación y Restauración': [
+                { name: 'Curación Menor (1d6+2)', cost: 1, note: 'Restaura Resistencia' },
+                { name: 'Curación (2d6+2)', cost: 2, note: 'Restaura Resistencia' },
+                { name: 'Curación Mayor (3d6+4)', cost: 3, note: 'Restaura Resistencia' },
+                { name: 'Curación Completa', cost: 5, note: 'Restaura toda Resistencia' }
+            ],
+            'Propiedades de Arma': [
+                { name: 'Alcance Extendido', cost: 2, note: '+3m alcance' },
+                { name: 'Retorno Automático', cost: 2, note: 'Arma vuelve' },
+                { name: 'Vampírica', cost: 4, note: 'Recupera Resistencia' },
+                { name: 'Penetración de Armadura', cost: 3, note: 'Ignora 3 pts armadura' }
+            ],
+            'Propiedades de Armadura': [
+                { name: 'Sin Penalización Sigilo', cost: 2, note: 'Elimina penalización' },
+                { name: 'Resistencia a Tipo Daño', cost: 4, note: 'Mitad de daño' },
+                { name: 'Inmunidad a Estado', cost: 3, note: 'Envenenado, Asustado, etc' },
+                { name: 'Absorción', cost: 2, note: 'Ignora 1 pto daño' }
+            ],
+            'Movimiento y Sentidos': [
+                { name: 'Pies Ligeros', cost: 2, note: 'Ignora terreno difícil' },
+                { name: 'Vuelo Limitado', cost: 5, note: '18m, 1/día, 3 rondas' },
+                { name: 'Visión en Oscuridad', cost: 2, note: 'Ver en oscuridad 15m' },
+                { name: 'Sentidos Agudos', cost: 3, note: 'Ventaja en Percepción' }
+            ],
+            'Utilidad Social': [
+                { name: 'Traductor Universal', cost: 3, note: 'Comprender idiomas' },
+                { name: 'Presencia Intimidante', cost: 2, note: 'Ventaja intimidación' },
+                { name: 'Encanto Sutil', cost: 2, note: 'Ventaja persuasión' },
+                { name: 'Detección de Mentiras', cost: 3, note: 'Ventaja detectar engaños' }
+            ]
+        };
 
-  const removeProperty = (id, isConsumable = false) => {
-    const setter = isConsumable ? setConsumable : setItem;
-    setter(prev => ({
-      ...prev,
-      properties: prev.properties.filter(p => p.id !== id)
-    }));
-  };
+        const CONSUMABLE_TYPES = {
+            'Poción': { formula: (ppp) => ppp * 50, action: 'Acción Rápida (beber)', icon: '🧪' },
+            'Pergamino': { formula: (ppp) => ppp * 75, action: 'Acción Principal + Salvación', icon: '📜' },
+            'Talismán': { formula: (ppp) => ppp * 60, action: 'Activación automática', icon: '✨' },
+            'Aceite': { formula: (ppp) => ppp * 40, action: '1 minuto aplicar', icon: '🫙' }
+        };
 
-  const getRarityFromPPP = (ppp) => {
-    for (const [rarity, range] of Object.entries(RARITIES)) {
-      if (ppp >= range.min && ppp <= range.max) return rarity;
-    }
-    return 'Fuera de rango';
-  };
+        const ItemCreator = () => {
+            const [activeTab, setActiveTab] = useState('objects');
+            const [item, setItem] = useState({ name: '', rarity: 'Raro', properties: [] });
+            const [consumable, setConsumable] = useState({ name: '', type: 'Poción', properties: [], quantity: 1 });
+            const [selectedCategory, setSelectedCategory] = useState('');
 
-  const exportData = (isConsumable = false) => {
-    if (isConsumable) {
-      const typeData = CONSUMABLE_TYPES[consumable.type];
-      const unitPrice = typeData.formula(consumablePPP);
-      const text = `${consumable.type}: ${consumable.name}\nRareza: ${getRarityFromPPP(consumablePPP)} (${consumablePPP} PPP)\nEfectos:\n${consumable.properties.map(p => `• ${p.name}`).join('\n')}\nPrecio: ${unitPrice * consumable.quantity} L (${consumable.quantity} unidades)`;
-      
-      const blob = new Blob([text], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${consumable.name}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      const text = `${item.name}\nRareza: ${item.rarity} (${itemPPP} PPP)\nPropiedades:\n${item.properties.map(p => `• ${p.name} (${p.cost} PPP)`).join('\n')}`;
-      
-      const blob = new Blob([text], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${item.name}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  };
+            const itemPPP = item.properties.reduce((sum, p) => sum + p.cost, 0);
+            const consumablePPP = consumable.properties.reduce((sum, p) => sum + p.cost, 0);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white p-6 rounded-lg shadow-xl mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Book className="w-8 h-8" />
-            <div>
-              <h1 className="text-3xl font-bold">Creador de Objetos PAPA</h1>
-              <p className="text-amber-100">Sistema de PPP unificado</p>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('objects')}
-              className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'objects' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white'}`}
-            >
-              📿 Permanentes
-            </button>
-            <button
-              onClick={() => setActiveTab('consumables')}
-              className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'consumables' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white'}`}
-            >
-              🧪 Consumibles
-            </button>
-          </div>
-        </header>
+            const addProperty = (prop, isConsumable = false) => {
+                const setter = isConsumable ? setConsumable : setItem;
+                setter(prev => ({
+                    ...prev,
+                    properties: [...prev.properties, { ...prop, id: Date.now() }]
+                }));
+            };
 
-        {activeTab === 'consumables' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Información</h2>
-                <input
-                  type="text"
-                  value={consumable.name}
-                  onChange={(e) => setConsumable(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md mb-3"
-                  placeholder="Nombre del consumible"
-                />
-                <select
-                  value={consumable.type}
-                  onChange={(e) => setConsumable(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  {Object.entries(CONSUMABLE_TYPES).map(([type, data]) => (
-                    <option key={type} value={type}>{data.icon} {type}</option>
-                  ))}
-                </select>
-              </div>
+            const removeProperty = (id, isConsumable = false) => {
+                const setter = isConsumable ? setConsumable : setItem;
+                setter(prev => ({
+                    ...prev,
+                    properties: prev.properties.filter(p => p.id !== id)
+                }));
+            };
 
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Efectos (mismo catálogo que permanentes)</h2>
-                <p className="text-sm text-gray-600 mb-3">Los consumibles usan las mismas propiedades pero con fórmulas de precio diferentes</p>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md mb-3"
-                >
-                  <option value="">Seleccionar categoría</option>
-                  {Object.keys(PROPERTIES).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+            const getRarityFromPPP = (ppp) => {
+                for (const [rarity, range] of Object.entries(RARITIES)) {
+                    if (ppp >= range.min && ppp <= range.max) return rarity;
+                }
+                return 'Fuera de rango';
+            };
 
-                {selectedCategory && (
-                  <div className="space-y-2 mb-4">
-                    {PROPERTIES[selectedCategory].map((prop, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => addProperty(prop, true)}
-                        className="w-full text-left p-2 border rounded hover:bg-amber-50"
-                      >
-                        <div className="flex justify-between">
-                          <span>{prop.name}</span>
-                          <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+            const exportData = (isConsumable = false) => {
+                if (isConsumable) {
+                    const typeData = CONSUMABLE_TYPES[consumable.type];
+                    const unitPrice = typeData.formula(consumablePPP);
+                    const text = `${consumable.type}: ${consumable.name}
+Rareza Equivalente: ${getRarityFromPPP(consumablePPP)} (${consumablePPP} PPP)
 
-                <div className="space-y-2">
-                  {consumable.properties.map(prop => (
-                    <div key={prop.id} className="flex justify-between items-center bg-purple-50 p-3 rounded">
-                      <span>{prop.name}</span>
-                      <div className="flex gap-2">
-                        <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
-                        <button onClick={() => removeProperty(prop.id, true)} className="text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+EFECTOS:
+${consumable.properties.map(p => `• ${p.name} - ${p.note}`).join('\n')}
+
+Uso: ${typeData.action}
+
+COSTE:
+Precio Unitario: ${unitPrice} L
+Cantidad: ${consumable.quantity}
+Precio Total: ${unitPrice * consumable.quantity} L
+
+Fórmula: ${consumablePPP} PPP × ${typeData.formula(1)} = ${unitPrice} L`;
+                    
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${consumable.name || 'consumible'}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } else {
+                    const text = `${item.name}
+Rareza: ${item.rarity} (${itemPPP} PPP)
+Presupuesto: ${RARITIES[item.rarity].min}-${RARITIES[item.rarity].max} PPP
+Precio Aproximado: ${RARITIES[item.rarity].price}
+
+PROPIEDADES:
+${item.properties.map(p => `• ${p.name} (${p.cost} PPP) - ${p.note}`).join('\n')}
+
+Coste Total: ${itemPPP} PPP`;
+                    
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${item.name || 'objeto'}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+                    <div className="max-w-6xl mx-auto">
+                        <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white p-6 rounded-lg shadow-xl mb-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <BookIcon />
+                                <div>
+                                    <h1 className="text-3xl font-bold">Creador de Objetos PAPA</h1>
+                                    <p className="text-amber-100">Sistema de PPP unificado</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setActiveTab('objects')}
+                                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'objects' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
+                                >
+                                    📿 Objetos Permanentes
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('consumables')}
+                                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'consumables' ? 'bg-white text-amber-800' : 'bg-amber-700 text-white hover:bg-amber-600'}`}
+                                >
+                                    🧪 Consumibles
+                                </button>
+                            </div>
+                        </header>
+
+                        {activeTab === 'consumables' ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="lg:col-span-2 space-y-4">
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Información Básica</h2>
+                                        <input
+                                            type="text"
+                                            value={consumable.name}
+                                            onChange={(e) => setConsumable(prev => ({ ...prev, name: e.target.value }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            placeholder="Nombre del consumible"
+                                        />
+                                        <select
+                                            value={consumable.type}
+                                            onChange={(e) => setConsumable(prev => ({ ...prev, type: e.target.value }))}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            {Object.entries(CONSUMABLE_TYPES).map(([type, data]) => (
+                                                <option key={type} value={type}>{data.icon} {type}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Efectos</h2>
+                                        <p className="text-sm text-gray-600 mb-3 bg-blue-50 p-3 rounded border border-blue-200">
+                                            💡 Los consumibles usan el mismo catálogo de propiedades que los objetos permanentes. La diferencia está en la fórmula de precio según el tipo.
+                                        </p>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            <option value="">-- Seleccionar categoría --</option>
+                                            {Object.keys(PROPERTIES).map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+
+                                        {selectedCategory && (
+                                            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto border border-gray-200 rounded p-3">
+                                                {PROPERTIES[selectedCategory].map((prop, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => addProperty(prop, true)}
+                                                        className="w-full text-left p-3 border border-gray-200 rounded hover:bg-amber-50 transition-colors"
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <div className="font-medium text-gray-900">{prop.name}</div>
+                                                                <div className="text-xs text-gray-600 mt-1">{prop.note}</div>
+                                                            </div>
+                                                            <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
+                                                                {prop.cost} PPP
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <h3 className="font-semibold text-gray-700">Efectos Agregados:</h3>
+                                            {consumable.properties.length === 0 ? (
+                                                <p className="text-gray-500 text-sm italic">No hay efectos agregados</p>
+                                            ) : (
+                                                consumable.properties.map(prop => (
+                                                    <div key={prop.id} className="flex justify-between items-center bg-purple-50 p-3 rounded border border-purple-200">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-900">{prop.name}</div>
+                                                            <div className="text-xs text-gray-600">{prop.note}</div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-purple-600 text-white px-2 py-1 rounded text-sm font-bold">
+                                                                {prop.cost} PPP
+                                                            </span>
+                                                            <button 
+                                                                onClick={() => removeProperty(prop.id, true)} 
+                                                                className="text-red-600 hover:text-red-800 p-1"
+                                                            >
+                                                                <Trash2Icon />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Cantidad</h2>
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                onClick={() => setConsumable(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                                                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold transition-colors"
+                                            >-</button>
+                                            <input
+                                                type="number"
+                                                value={consumable.quantity}
+                                                onChange={(e) => setConsumable(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                                className="w-20 text-center text-2xl font-bold border border-gray-300 rounded px-2 py-1"
+                                            />
+                                            <button
+                                                onClick={() => setConsumable(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                                                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold transition-colors"
+                                            >+</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+                                        <div className="space-y-4">
+                                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                                <div className="text-sm text-gray-600 mb-1">Tipo</div>
+                                                <div className="text-xl font-bold text-purple-900">
+                                                    {CONSUMABLE_TYPES[consumable.type].icon} {consumable.type}
+                                                </div>
+                                                <div className="text-xs text-gray-600 mt-2">
+                                                    {CONSUMABLE_TYPES[consumable.type].action}
+                                                </div>
+                                            </div>
+                                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                                                <div className="text-sm text-gray-600 mb-1">Rareza Equivalente</div>
+                                                <div className="text-lg font-bold text-amber-900">{getRarityFromPPP(consumablePPP)}</div>
+                                                <div className="text-xs text-gray-600 mt-1">Basado en {consumablePPP} PPP</div>
+                                            </div>
+                                            <div className="space-y-2 text-sm border-t pt-4">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">PPP Base:</span>
+                                                    <span className="font-bold text-amber-700">{consumablePPP} PPP</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Precio Unitario:</span>
+                                                    <span className="font-bold text-green-700">
+                                                        {CONSUMABLE_TYPES[consumable.type].formula(consumablePPP)} L
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Cantidad:</span>
+                                                    <span className="font-bold text-amber-700">×{consumable.quantity}</span>
+                                                </div>
+                                                <div className="flex justify-between pt-3 border-t-2 border-amber-300">
+                                                    <span className="text-lg font-semibold text-gray-700">TOTAL:</span>
+                                                    <span className="text-2xl font-bold text-amber-900">
+                                                        {CONSUMABLE_TYPES[consumable.type].formula(consumablePPP) * consumable.quantity} L
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => exportData(true)}
+                                                disabled={!consumable.name || consumablePPP === 0}
+                                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                                            >
+                                                <DownloadIcon />
+                                                Exportar Consumible
+                                            </button>
+                                            <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                                                <div className="text-sm font-semibold text-blue-900 mb-2">📋 Fórmulas de Precio</div>
+                                                <div className="text-xs text-gray-700 space-y-1">
+                                                    <div><strong>Poción:</strong> PPP × 50 L</div>
+                                                    <div><strong>Pergamino:</strong> PPP × 75 L</div>
+                                                    <div><strong>Talismán:</strong> PPP × 60 L</div>
+                                                    <div><strong>Aceite:</strong> PPP × 40 L</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="lg:col-span-2 space-y-4">
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Información Básica</h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Nombre del Objeto
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => setItem(prev => ({ ...prev, name: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                                    placeholder="Ej: Espada del Alba Carmesí"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Rareza
+                                                </label>
+                                                <select
+                                                    value={item.rarity}
+                                                    onChange={(e) => setItem(prev => ({ ...prev, rarity: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500"
+                                                >
+                                                    {Object.keys(RARITIES).map(r => (
+                                                        <option key={r} value={r}>{r}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg shadow-lg p-6">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Propiedades</h2>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            <option value="">-- Seleccionar categoría --</option>
+                                            {Object.keys(PROPERTIES).map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+
+                                        {selectedCategory && (
+                                            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto border border-gray-200 rounded p-3">
+                                                {PROPERTIES[selectedCategory].map((prop, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => addProperty(prop, false)}
+                                                        className="w-full text-left p-3 border border-gray-200 rounded hover:bg-amber-50 transition-colors"
+                                                    >
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <div className="font-medium text-gray-900">{prop.name}</div>
+                                                                <div className="text-xs text-gray-600 mt-1">{prop.note}</div>
+                                                            </div>
+                                                            <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm font-bold ml-2">
+                                                                {prop.cost} PPP
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <h3 className="font-semibold text-gray-700">Propiedades Agregadas:</h3>
+                                            {item.properties.length === 0 ? (
+                                                <p className="text-gray-500 text-sm italic">No hay propiedades agregadas</p>
+                                            ) : (
+                                                item.properties.map(prop => (
+                                                    <div key={prop.id} className="flex justify-between items-center bg-amber-50 p-3 rounded border border-amber-200">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-900">{prop.name}</div>
+                                                            <div className="text-xs text-gray-600">{prop.note}</div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm font-bold">
+                                                                {prop.cost} PPP
+                                                            </span>
+                                                            <button 
+                                                                onClick={() => removeProperty(prop.id, false)} 
+                                                                className="text-red-600 hover:text-red-800 p-1">
+                                                                <Trash2Icon />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
+                                        <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
+                                        <div className="space-y-4">
+                                            <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-4 rounded-lg">
+                                                <div className="text-sm text-gray-600 mb-1">Presupuesto {item.rarity}</div>
+                                                <div className="text-2xl font-bold text-amber-900">
+                                                    {RARITIES[item.rarity].min} - {RARITIES[item.rarity].max} PPP
+                                                </div>
+                                                <div className="text-xs text-gray-600 mt-1">
+                                                    Precio: {RARITIES[item.rarity].price}
+                                                </div>
+                                            </div>
+                                            <div className={`p-4 rounded-lg ${itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max ? 'bg-green-100' : 'bg-red-100'}`}>
+                                                <div className="text-sm text-gray-600 mb-1">Coste Total</div>
+                                                <div className={`text-3xl font-bold ${itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max ? 'text-green-700' : 'text-red-700'}`}>
+                                                    {itemPPP} PPP
+                                                </div>
+                                                {!(itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max) && itemPPP > 0 && (
+                                                    <div className="text-xs text-red-600 mt-2">
+                                                        ⚠️ Fuera del presupuesto
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => exportData(false)}
+                                                disabled={!item.name || itemPPP === 0}
+                                                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                                            >
+                                                <DownloadIcon />
+                                                Exportar Objeto
+                                            </button>
+                                            <div className="bg-amber-50 p-3 rounded border border-amber-200">
+                                                <div className="text-sm font-semibold text-amber-900 mb-2">💡 Principios de Diseño</div>
+                                                <ul className="text-xs text-gray-700 space-y-1">
+                                                    <li>• Cada objeto cuenta una historia</li>
+                                                    <li>• El poder tiene precio</li>
+                                                    <li>• La versatilidad es poder</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                  ))}
                 </div>
-              </div>
+            );
+        };
 
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Cantidad</h2>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setConsumable(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
-                    className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold"
-                  >-</button>
-                  <input
-                    type="number"
-                    value={consumable.quantity}
-                    onChange={(e) => setConsumable(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    className="w-20 text-center text-2xl font-bold border rounded"
-                  />
-                  <button
-                    onClick={() => setConsumable(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                    className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold"
-                  >+</button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
-                <div className="space-y-4">
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600">Tipo</div>
-                    <div className="text-xl font-bold">{CONSUMABLE_TYPES[consumable.type].icon} {consumable.type}</div>
-                  </div>
-                  <div className="bg-amber-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600">Rareza Equivalente</div>
-                    <div className="text-lg font-bold">{getRarityFromPPP(consumablePPP)}</div>
-                    <div className="text-xs text-gray-600">{consumablePPP} PPP</div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Precio Unit:</span>
-                      <span className="font-bold">{CONSUMABLE_TYPES[consumable.type].formula(consumablePPP)} L</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cantidad:</span>
-                      <span className="font-bold">×{consumable.quantity}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t-2">
-                      <span className="font-bold">TOTAL:</span>
-                      <span className="text-xl font-bold text-amber-900">
-                        {CONSUMABLE_TYPES[consumable.type].formula(consumablePPP) * consumable.quantity} L
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => exportData(true)}
-                    disabled={!consumable.name}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />Exportar
-                  </button>
-                  <div className="bg-blue-50 p-3 rounded text-xs">
-                    <div className="font-bold mb-1">📋 Fórmulas de Precio</div>
-                    <div>Poción: PPP × 50 L</div>
-                    <div>Pergamino: PPP × 75 L</div>
-                    <div>Talismán: PPP × 60 L</div>
-                    <div>Aceite: PPP × 40 L</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Información</h2>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => setItem(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md mb-3"
-                  placeholder="Nombre del objeto"
-                />
-                <select
-                  value={item.rarity}
-                  onChange={(e) => setItem(prev => ({ ...prev, rarity: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  {Object.keys(RARITIES).map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Propiedades</h2>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md mb-3"
-                >
-                  <option value="">Seleccionar categoría</option>
-                  {Object.keys(PROPERTIES).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-
-                {selectedCategory && (
-                  <div className="space-y-2 mb-4">
-                    {PROPERTIES[selectedCategory].map((prop, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => addProperty(prop, false)}
-                        className="w-full text-left p-2 border rounded hover:bg-amber-50"
-                      >
-                        <div className="flex justify-between">
-                          <span>{prop.name}</span>
-                          <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {item.properties.map(prop => (
-                    <div key={prop.id} className="flex justify-between items-center bg-amber-50 p-3 rounded">
-                      <span>{prop.name}</span>
-                      <div className="flex gap-2">
-                        <span className="bg-amber-600 text-white px-2 py-1 rounded text-sm">{prop.cost} PPP</span>
-                        <button onClick={() => removeProperty(prop.id, false)} className="text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-                <h2 className="text-xl font-bold text-amber-900 mb-4">Resumen</h2>
-                <div className="space-y-4">
-                  <div className="bg-amber-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-600">Presupuesto {item.rarity}</div>
-                    <div className="text-2xl font-bold">{RARITIES[item.rarity].min}-{RARITIES[item.rarity].max} PPP</div>
-                  </div>
-                  <div className={`p-4 rounded-lg ${itemPPP >= RARITIES[item.rarity].min && itemPPP <= RARITIES[item.rarity].max ? 'bg-green-100' : 'bg-red-100'}`}>
-                    <div className="text-sm text-gray-600">Coste Total</div>
-                    <div className="text-3xl font-bold">{itemPPP} PPP</div>
-                  </div>
-                  <button
-                    onClick={() => exportData(false)}
-                    disabled={!item.name}
-                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />Exportar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default ItemCreator;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ItemCreator />);
+    </script>
+</body>
+</html>
